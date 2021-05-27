@@ -1,4 +1,4 @@
-package com.fruitbasket.audioplatform.utils.sqlite;
+package com.rjgc.sqlite;
 
 public class Species {
     private int id;

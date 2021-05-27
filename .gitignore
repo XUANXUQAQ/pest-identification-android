@@ -102,3 +102,4 @@ app/src/main/assets/public
 
 offline-net/JPEGImages/
 model.pt
+model-mobile.pt

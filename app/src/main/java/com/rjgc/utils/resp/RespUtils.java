@@ -1,4 +1,4 @@
-package com.fruitbasket.audioplatform.utils;
+package com.rjgc.utils.resp;
 
 import java.util.Map;
 

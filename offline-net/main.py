@@ -8,6 +8,7 @@ from torch import nn
 from torch.autograd import Variable
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.dataloader import default_collate
+from torch.utils.mobile_optimizer import optimize_for_mobile
 from torchvision.transforms import transforms as tt
 import pycurl
 
@@ -116,6 +117,9 @@ class CNN(nn.Module):
         return x
 
 
+net = CNN().to(torch.device('cuda'))
+
+
 def init(classes_url):
     global net
     __set_classes(classes_url)
@@ -157,7 +161,6 @@ def predict(__images):
 
 def train():
     global net
-    net = CNN().to(torch.device('cuda'))
     data_train = DataLoader(dataset=CustomDataset("train.txt", transforms), collate_fn=collate_fn,
                             batch_size=BATCH_SIZE, shuffle=True)
     optimizer = torch.optim.Adam(net.parameters(), lr=LR)
@@ -184,5 +187,21 @@ def train():
         torch.save(net.state_dict(), 'logs/Epoch{}.pt'.format(each_epoch))
 
 
+def to_mobile():
+    net.eval()
+    if os.path.exists('model.pt'):
+        state_dict = torch.load('model.pt', map_location=torch.device('cpu'))
+        net.to(torch.device('cpu'))
+        model_dict = net.state_dict()
+        state_dict = {k: v for k, v in state_dict.items() if np.shape(model_dict[k]) == np.shape(v)}
+        model_dict.update(state_dict)
+        net.load_state_dict(model_dict)
+    example = torch.rand(1, 3, 608, 608)
+    traced_script_module = torch.jit.trace(net, example)
+    optimized_traced_model = optimize_for_mobile(traced_script_module)
+    optimized_traced_model.save("model-mobile.pt")
+
+
 if __name__ == '__main__':
-    train()
+    # train()
+    to_mobile()

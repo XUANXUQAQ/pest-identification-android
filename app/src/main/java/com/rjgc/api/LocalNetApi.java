@@ -1,10 +1,9 @@
-package com.fruitbasket.audioplatform.api;
+package com.rjgc.api;
 
 import com.alibaba.fastjson.JSON;
-import com.chaquo.python.PyObject;
-import com.fruitbasket.audioplatform.resp.ResBody;
-import com.fruitbasket.audioplatform.utils.Base64Utils;
-import com.fruitbasket.audioplatform.utils.RespUtils;
+import com.rjgc.utils.resp.ResBody;
+import com.rjgc.utils.Base64Utils;
+import com.rjgc.utils.resp.RespUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,13 +16,13 @@ public class LocalNetApi extends NanoHTTPD {
 
     private final File cachedDir;
 
-    private final PyObject cnnNet;
+    private final CnnApi cnnNet;
 
     private String predictFileName;
 
     private String photoBase64;
 
-    public LocalNetApi(int port, File cachedDir, PyObject net) {
+    public LocalNetApi(int port, File cachedDir, CnnApi net) {
         super(port);
         this.cachedDir = cachedDir;
         this.cnnNet = net;
@@ -56,8 +55,7 @@ public class LocalNetApi extends NanoHTTPD {
                     Base64Utils.base642Jpg(file, photo.getAbsolutePath());
                     return RespUtils.responseCORS(ResBody.success().toString(), session);
                 } else if (uri.contains("startPredict")) {
-                    PyObject predict = cnnNet.callAttr("predict", new File(cachedDir, predictFileName).getAbsolutePath());
-                    String code = predict.toJava(String.class);
+                    String code = cnnNet.predict(new File(cachedDir, predictFileName).getAbsolutePath());
                     HashMap<String, Object> map = new HashMap<>();
                     HashMap<String, Object> infoMap = new HashMap<>();
                     HashMap<String, Object> codeMap = new HashMap<>();

@@ -1,29 +1,14 @@
 apply plugin: 'com.android.application'
-apply plugin: 'com.chaquo.python'
 
 android {
     compileSdkVersion rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.fruitbasket.audioplatform"
+        applicationId "com.rjgc"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        ndk {
-            abiFilters "arm64-v8a", "x86"
-        }
-        python {
-            // 指定python路径
-            buildPython "/home/xuanxu/miniconda3/envs/android/bin/python"
-            pip {
-                options "--proxy", "http://127.0.0.1:8889"
-                install "torch"
-                install "torchvision"
-                install "pycurl"
-                install "pillow"
-            }
-        }
     }
     buildTypes {
         release {
@@ -50,6 +35,8 @@ dependencies {
     implementation'org.nanohttpd:nanohttpd:2.3.1'
     implementation'com.alibaba:fastjson:1.1.72.android'
     implementation'com.squareup.okhttp3:okhttp:3.10.0'
+    implementation 'org.pytorch:pytorch_android:1.8.0'
+    implementation 'org.pytorch:pytorch_android_torchvision:1.8.0'
 }
 
 apply from: 'capacitor.build.gradle'

@@ -1,4 +1,4 @@
-package com.fruitbasket.audioplatform.utils.sqlite;
+package com.rjgc.sqlite;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -6,7 +6,6 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
 import com.alibaba.fastjson.JSON;
-import com.getcapacitor.ui.Toast;
 
 import java.io.IOException;
 import java.util.List;
@@ -42,9 +41,6 @@ public class SqliteUtils {
         this.db = databaseHelper.getWritableDatabase();
         this.remoteApiUrl = remoteApiUrl;
         SqliteUtils self = this;
-        if (isDatabaseEmpty()) {
-            Toast.show(context, "第一次使用需要同步数据库，否则将无法在离线时使用");
-        }
         TimerTask syncTask = new TimerTask() {
             @Override
             public void run() {
@@ -53,14 +49,6 @@ public class SqliteUtils {
         };
         //每十分钟同步一次数据库
         this.timer.schedule(syncTask, 0, 1000 * 60 * 10);
-    }
-
-    private boolean isDatabaseEmpty() {
-        Cursor cursor = this.db.rawQuery("SELECT COUNT(*) as count from species;", null);
-        if (cursor.moveToNext()) {
-            return cursor.getInt(getCursorIndex(cursor, "count")) == 0;
-        }
-        return false;
     }
 
     private int getCursorIndex(Cursor cursor, String columnName) {

@@ -1,4 +1,4 @@
-package com.fruitbasket.audioplatform.resp;
+package com.rjgc.utils.resp;
 
 import com.alibaba.fastjson.JSON;
 

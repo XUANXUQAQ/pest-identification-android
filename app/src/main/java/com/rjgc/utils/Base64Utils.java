@@ -1,4 +1,4 @@
-package com.fruitbasket.audioplatform.utils;
+package com.rjgc.utils;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;

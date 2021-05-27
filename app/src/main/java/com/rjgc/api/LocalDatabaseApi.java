@@ -1,11 +1,12 @@
-package com.fruitbasket.audioplatform.api;
+package com.rjgc.api;
 
 import android.content.Context;
 
-import com.fruitbasket.audioplatform.resp.ResBody;
-import com.fruitbasket.audioplatform.utils.RespUtils;
-import com.fruitbasket.audioplatform.utils.sqlite.Species;
-import com.fruitbasket.audioplatform.utils.sqlite.SqliteUtils;
+import com.getcapacitor.ui.Toast;
+import com.rjgc.utils.resp.ResBody;
+import com.rjgc.utils.resp.RespUtils;
+import com.rjgc.sqlite.Species;
+import com.rjgc.sqlite.SqliteUtils;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -15,10 +16,12 @@ import fi.iki.elonen.NanoHTTPD;
 public class LocalDatabaseApi extends NanoHTTPD {
 
     private final SqliteUtils sqliteUtils;
+    private final Context context;
 
     public LocalDatabaseApi(int port, Context context, String remoteApiUrl) {
         super(port);
         this.sqliteUtils = SqliteUtils.getInstance(context, remoteApiUrl);
+        this.context = context;
     }
 
     @Override
@@ -35,6 +38,7 @@ public class LocalDatabaseApi extends NanoHTTPD {
                 list.add(species);
                 map.put("pages", 1);
                 map.put("data", list);
+                Toast.show(context, "当前无网络，个数识别和准确率受限");
                 return RespUtils.responseCORS(ResBody.success(map).toString(), session);
             }
         }
