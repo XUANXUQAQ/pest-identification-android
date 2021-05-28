@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory;
 
 import com.alibaba.fastjson.JSON;
 import com.rjgc.utils.Base64Utils;
+import com.rjgc.utils.NetUtils;
 import com.rjgc.utils.resp.ResBody;
 import com.rjgc.utils.resp.RespUtils;
 
@@ -20,16 +21,11 @@ public class LocalNetApi extends NanoHTTPD {
 
     private final File cachedDir;
 
-    private final CnnApi cnnNet;
-
     private String predictFileName;
 
-    private String photoBase64;
-
-    public LocalNetApi(int port, File cachedDir, CnnApi net) {
+    public LocalNetApi(int port, File cachedDir) {
         super(port);
         this.cachedDir = cachedDir;
-        this.cnnNet = net;
     }
 
 
@@ -55,21 +51,26 @@ public class LocalNetApi extends NanoHTTPD {
                     String name = (String) parameters.get("name");
                     predictFileName = name;
                     File photo = new File(cachedDir, name);
-                    photoBase64 = file;
                     Base64Utils.base642Jpg(file, photo.getAbsolutePath());
                     return RespUtils.responseCORS(ResBody.success().toString(), session);
                 } else if (uri.contains("startPredict")) {
                     Bitmap bitmap;
-                    try (FileInputStream fis = new FileInputStream(new File(cachedDir, predictFileName).getAbsolutePath())) {
+                    File path = new File(cachedDir, predictFileName);
+                    try (FileInputStream fis = new FileInputStream(path)) {
                         bitmap = BitmapFactory.decodeStream(fis);
-                        String code = cnnNet.predict(bitmap);
+                        bitmap = zoomImg(bitmap, 640, 640);
+                        NetUtils.INSTANCE.send(bitmap);
+                        Object[] predictInfo = NetUtils.INSTANCE.getResult(bitmap);
+
+                        HashMap<String, Integer> codeMap = (HashMap<String, Integer>) predictInfo[0];
+
                         HashMap<String, Object> map = new HashMap<>();
-                        HashMap<String, Object> infoMap = new HashMap<>();
-                        HashMap<String, Object> codeMap = new HashMap<>();
-                        codeMap.put(code, 1);
-                        infoMap.put("statistics", codeMap);
-                        infoMap.put("img", photoBase64);
-                        map.put(predictFileName, infoMap);
+                        HashMap<String, Object> resultWrapper = new HashMap<>();
+
+                        resultWrapper.put("statistics", codeMap);
+                        Bitmap processedImg = (Bitmap) predictInfo[1];
+                        resultWrapper.put("img", Base64Utils.bitmap2Base64(processedImg));
+                        map.put(predictFileName, resultWrapper);
                         return RespUtils.responseCORS(ResBody.success(map).toString(), session);
                     }
                 }
@@ -78,5 +79,10 @@ public class LocalNetApi extends NanoHTTPD {
             }
         }
         return RespUtils.responseCORS(ResBody.error(40000, "无效的请求").toString(), session);
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private Bitmap zoomImg(Bitmap bm, int newWidth, int newHeight) {
+        return Bitmap.createScaledBitmap(bm, newWidth,newHeight, true);
     }
 }

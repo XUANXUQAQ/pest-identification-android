@@ -38,7 +38,7 @@ public class LocalDatabaseApi extends NanoHTTPD {
                 list.add(species);
                 map.put("pages", 1);
                 map.put("data", list);
-                Toast.show(context, "当前无网络，个数识别和准确率受限");
+                Toast.show(context, "当前无网络，识别功能受限");
                 return RespUtils.responseCORS(ResBody.success(map).toString(), session);
             }
         }
