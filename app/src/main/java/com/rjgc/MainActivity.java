@@ -30,9 +30,12 @@ public class MainActivity extends BridgeActivity {
         // Initializes the Bridge
         this.init(savedInstanceState, new ArrayList<Class<? extends Plugin>>() {
         });
+        init();
+    }
 
-        CnnApi cnnApi = CnnApi.getInstance();
+    private void init() {
         try {
+            CnnApi cnnApi = CnnApi.getInstance();
             cnnApi.init(assetFilePath(this, "model.pt"));
             new LocalNetApi(8888, this.getCacheDir(), cnnApi).start();
             new LocalDatabaseApi(8889, this, "http://rjgc.club:8099/species/all").start();

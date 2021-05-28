@@ -90,7 +90,7 @@ public class SqliteUtils {
         OkHttpClient okHttpClient = new OkHttpClient();
         int pageNum = 1;
         final int pageSize = 10;
-        int pages;
+        int pages = 1;
         while (true) {
             Request build = new Request.Builder().url(this.remoteApiUrl + "?pageNum=" + pageNum + "&pageSize=" + pageSize).build();
             try (Response resp = okHttpClient.newCall(build).execute()) {
@@ -99,41 +99,45 @@ public class SqliteUtils {
                     String respStr = body.string();
                     Map<String, Object> map = JSON.parseObject(respStr, Map.class);
                     Map<String, Object> result = (Map<String, Object>) map.get("result");
-                    List<Object> data = (List<Object>) result.get("data");
-                    pages = (int) result.get("pages");
-                    for (Object each : data) {
-                        try {
-                            db.execSQL("BEGIN;");
-                            Map<String, Object> speciesInfo = (Map<String, Object>) each;
-                            int id = (int) speciesInfo.get("id");
-                            if (isIdExist(id)) {
-                                ContentValues contentValues = new ContentValues();
-                                for (String key : speciesInfo.keySet()) {
-                                    Object o = speciesInfo.get(key);
-                                    if (o instanceof String) {
-                                        contentValues.put(key, (String) o);
+                    try {
+                        List<Object> data = (List<Object>) result.get("data");
+                        pages = (int) result.get("pages");
+                        for (Object each : data) {
+                            try {
+                                db.execSQL("BEGIN;");
+                                Map<String, Object> speciesInfo = (Map<String, Object>) each;
+                                int id = (int) speciesInfo.get("id");
+                                if (isIdExist(id)) {
+                                    ContentValues contentValues = new ContentValues();
+                                    for (String key : speciesInfo.keySet()) {
+                                        Object o = speciesInfo.get(key);
+                                        if (o instanceof String) {
+                                            contentValues.put(key, (String) o);
+                                        }
                                     }
+                                    db.update("species", contentValues, "id=?", new String[]{String.valueOf(id)});
+                                } else {
+                                    ContentValues contentValues = new ContentValues();
+                                    contentValues.put("id", id);
+                                    contentValues.put("code", (String) speciesInfo.get("code"));
+                                    contentValues.put("name", (String) speciesInfo.get("name"));
+                                    contentValues.put("latin", (String) speciesInfo.get("latin"));
+                                    contentValues.put("plant", (String) speciesInfo.get("plant"));
+                                    contentValues.put("area", (String) speciesInfo.get("area"));
+                                    contentValues.put("image", (String) speciesInfo.get("image"));
+                                    contentValues.put("genus_name", (String) speciesInfo.get("genus_name"));
+                                    contentValues.put("family_name", (String) speciesInfo.get("family_name"));
+                                    contentValues.put("order_name", (String) speciesInfo.get("order_name"));
+                                    db.insert("species", null, contentValues);
                                 }
-                                db.update("species", contentValues, "id=?", new String[]{String.valueOf(id)});
-                            } else {
-                                ContentValues contentValues = new ContentValues();
-                                contentValues.put("id", id);
-                                contentValues.put("code", (String) speciesInfo.get("code"));
-                                contentValues.put("name", (String) speciesInfo.get("name"));
-                                contentValues.put("latin", (String) speciesInfo.get("latin"));
-                                contentValues.put("plant", (String) speciesInfo.get("plant"));
-                                contentValues.put("area", (String) speciesInfo.get("area"));
-                                contentValues.put("image", (String) speciesInfo.get("image"));
-                                contentValues.put("genus_name", (String) speciesInfo.get("genus_name"));
-                                contentValues.put("family_name", (String) speciesInfo.get("family_name"));
-                                contentValues.put("order_name", (String) speciesInfo.get("order_name"));
-                                db.insert("species", null, contentValues);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            } finally {
+                                db.execSQL("COMMIT;");
                             }
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        } finally {
-                            db.execSQL("COMMIT;");
                         }
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
                     pageNum++;
                     if (pageNum >= pages) {

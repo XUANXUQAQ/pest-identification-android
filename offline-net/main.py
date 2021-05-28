@@ -3,6 +3,7 @@ import os
 
 import numpy as np
 import torch
+import torchvision
 from PIL import Image
 from torch import nn
 from torch.autograd import Variable
@@ -14,7 +15,7 @@ import pycurl
 
 BATCH_SIZE = 32
 LR = 0.01
-IMAGE_SIZE = 608
+IMAGE_SIZE = 224
 EPOCH = 200
 
 classes = ['C15204005005', 'C15104005005', 'C15331005010', 'C15206040005', 'C22301125010',
@@ -86,47 +87,14 @@ def collate_fn(batch):
     return default_collate(batch_final)  # 用默认方式拼接过滤后的batch数据
 
 
-class CNN(nn.Module):
-
-    def __init__(self):
-        super(CNN, self).__init__()
-        self.conv1 = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=6, kernel_size=(
-                3, 3), stride=(1, 1), padding=(2, 2)),
-            nn.ReLU(), nn.MaxPool2d(2, 2))
-
-        self.conv2 = nn.Sequential(nn.Conv2d(in_channels=6, out_channels=16, kernel_size=(5, 5)),
-                                   nn.ReLU(),
-                                   nn.MaxPool2d(2, 2))
-
-        self.fc1 = nn.Sequential(nn.Linear(in_features=16 * 150 * 150, out_features=300),
-                                 nn.BatchNorm1d(300), nn.ReLU())
-
-        self.fc2 = nn.Sequential(
-            nn.Linear(300, 150),
-            nn.BatchNorm1d(150),
-            nn.ReLU(),
-            nn.Linear(150, len(classes)))
-
-    def forward(self, x):
-        x = self.conv1(x)
-        x = self.conv2(x)
-        x = x.view(x.size()[0], -1)
-        x = self.fc1(x)
-        x = self.fc2(x)
-        return x
-
-
-net = CNN().to(torch.device('cuda'))
+net = torchvision.models.mobilenet_v3_small().to(torch.device('cuda'))
 
 
 def init(classes_url):
     global net
     __set_classes(classes_url)
-    net = CNN()
-    net.eval()
     path = os.path.join(os.path.dirname(__file__), 'model.pt')
-    pretrained_dict = torch.load(path, map_location=torch.device('cpu'))
+    pretrained_dict = torch.load(path, map_location=torch.device('cuda'))
     net.load_state_dict(pretrained_dict)
 
 
@@ -153,7 +121,7 @@ def __set_classes(classes_url):
 def predict(__images):
     img = Image.open(__images)
     img = transforms(img)
-    img = Variable(img).reshape(1, 3, IMAGE_SIZE, IMAGE_SIZE)
+    img = Variable(img).reshape(1, 3, IMAGE_SIZE, IMAGE_SIZE).cuda()
     output_test = net(img)
     _, predicted = torch.max(output_test, 1)
     return classes[predicted.cpu().numpy()[0]]
@@ -168,7 +136,7 @@ def train():
     if not os.path.exists("logs"):
         os.mkdir("logs")
     if os.path.exists('model.pt'):
-        print("加载与预训练模型")
+        print("加载预训练模型")
         state_dict = torch.load('model.pt', map_location=torch.device('cuda'))
         model_dict = net.state_dict()
         state_dict = {k: v for k, v in state_dict.items() if np.shape(model_dict[k]) == np.shape(v)}
@@ -190,13 +158,10 @@ def train():
 def to_mobile():
     net.eval()
     if os.path.exists('model.pt'):
-        state_dict = torch.load('model.pt', map_location=torch.device('cpu'))
-        net.to(torch.device('cpu'))
-        model_dict = net.state_dict()
-        state_dict = {k: v for k, v in state_dict.items() if np.shape(model_dict[k]) == np.shape(v)}
-        model_dict.update(state_dict)
-        net.load_state_dict(model_dict)
-    example = torch.rand(1, 3, 608, 608)
+        state_dict = torch.load('model.pt', map_location=torch.device('cuda'))
+        net.load_state_dict(state_dict)
+    example = torch.rand(1, 3, 224, 224)
+    example = Variable(example).cuda()
     traced_script_module = torch.jit.trace(net, example)
     optimized_traced_model = optimize_for_mobile(traced_script_module)
     optimized_traced_model.save("model-mobile.pt")
@@ -205,3 +170,5 @@ def to_mobile():
 if __name__ == '__main__':
     # train()
     to_mobile()
+    # init('')
+    # print(predict('JPEGImages/0.jpg'))

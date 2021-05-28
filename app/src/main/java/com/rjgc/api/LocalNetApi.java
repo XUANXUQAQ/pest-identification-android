@@ -1,11 +1,15 @@
 package com.rjgc.api;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+
 import com.alibaba.fastjson.JSON;
-import com.rjgc.utils.resp.ResBody;
 import com.rjgc.utils.Base64Utils;
+import com.rjgc.utils.resp.ResBody;
 import com.rjgc.utils.resp.RespUtils;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,7 +37,7 @@ public class LocalNetApi extends NanoHTTPD {
     public Response serve(IHTTPSession session) {
         Method method = session.getMethod();
         String uri = session.getUri();
-        if(RespUtils.isPreflightRequest(session)){
+        if (RespUtils.isPreflightRequest(session)) {
             // 如果是则发送CORS响应告诉浏览HTTP服务支持的METHOD及HEADERS和请求源
             return RespUtils.responseCORS(session);
         }
@@ -55,15 +59,19 @@ public class LocalNetApi extends NanoHTTPD {
                     Base64Utils.base642Jpg(file, photo.getAbsolutePath());
                     return RespUtils.responseCORS(ResBody.success().toString(), session);
                 } else if (uri.contains("startPredict")) {
-                    String code = cnnNet.predict(new File(cachedDir, predictFileName).getAbsolutePath());
-                    HashMap<String, Object> map = new HashMap<>();
-                    HashMap<String, Object> infoMap = new HashMap<>();
-                    HashMap<String, Object> codeMap = new HashMap<>();
-                    codeMap.put(code, 1);
-                    infoMap.put("statistics", codeMap);
-                    infoMap.put("img", photoBase64);
-                    map.put(predictFileName, infoMap);
-                    return RespUtils.responseCORS(ResBody.success(map).toString(), session);
+                    Bitmap bitmap;
+                    try (FileInputStream fis = new FileInputStream(new File(cachedDir, predictFileName).getAbsolutePath())) {
+                        bitmap = BitmapFactory.decodeStream(fis);
+                        String code = cnnNet.predict(bitmap);
+                        HashMap<String, Object> map = new HashMap<>();
+                        HashMap<String, Object> infoMap = new HashMap<>();
+                        HashMap<String, Object> codeMap = new HashMap<>();
+                        codeMap.put(code, 1);
+                        infoMap.put("statistics", codeMap);
+                        infoMap.put("img", photoBase64);
+                        map.put(predictFileName, infoMap);
+                        return RespUtils.responseCORS(ResBody.success(map).toString(), session);
+                    }
                 }
             } catch (IOException | ResponseException e) {
                 e.printStackTrace();
