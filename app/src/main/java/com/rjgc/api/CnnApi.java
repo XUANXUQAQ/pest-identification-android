@@ -2,6 +2,9 @@ package com.rjgc.api;
 
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.Rect;
 
 import org.pytorch.IValue;
@@ -59,6 +62,7 @@ public class CnnApi {
         float mIvScaleX = (bitmap.getWidth() > bitmap.getHeight() ? imageSize / bitmap.getWidth() : imageSize / bitmap.getHeight());
         float mIvScaleY = (bitmap.getHeight() > bitmap.getWidth() ? imageSize / bitmap.getHeight() : imageSize / bitmap.getWidth());
         final ArrayList<Result> results = outputsToNMSPredictions(outputs, mImgScaleX, mImgScaleY, mIvScaleX, mIvScaleY);
+        boolean hasRect = false;
         for (Result each : results) {
             String code = Classes.classes[each.classIndex];
             if (resultMap.containsKey(code)) {
@@ -68,13 +72,32 @@ public class CnnApi {
             } else {
                 resultMap.put(code, 1);
             }
+            if (each.rect.top != each.rect.bottom && each.rect.left != each.rect.right) {
+                drawRectangles(bitmap, each.rect);
+                processedImg[0] = bitmap;
+                hasRect = true;
+            }
+            if (!hasRect) {
+                processedImg[0] = bitmap;
+            }
         }
-        // todo 在bitmap上画框
-        processedImg[0] = bitmap;
         if (resultMap.isEmpty()) {
             resultMap.put("error", 1);
         }
         return resultMap;
+    }
+
+    private void drawRectangles(Bitmap imageBitmap, Rect valueRects) {
+        Bitmap mutableBitmap = imageBitmap.copy(Bitmap.Config.ARGB_8888, true);
+        Canvas canvas = new Canvas(mutableBitmap);
+        Paint paint = new Paint();
+        for (int i = 0; i < 8; i++) {
+            paint.setColor(Color.RED);
+            paint.setStyle(Paint.Style.STROKE);//不填充
+            paint.setStrokeWidth(10);  //线的宽度
+            canvas.drawRect(valueRects.left, valueRects.top, valueRects.right, valueRects.bottom, paint);
+        }
+        canvas.drawBitmap(imageBitmap, 0, 0, null);
     }
 
     private static ArrayList<Result> outputsToNMSPredictions(float[] outputs, float imgScaleX, float imgScaleY, float ivScaleX, float ivScaleY) {
@@ -131,13 +154,13 @@ public class CnnApi {
         // previous boxes), then repeat this procedure, until no more boxes remain
         // or the limit has been reached.
         boolean done = false;
-        for (int i=0; i<boxes.size() && !done; i++) {
+        for (int i = 0; i < boxes.size() && !done; i++) {
             if (active[i]) {
                 Result boxA = boxes.get(i);
                 selected.add(boxA);
                 if (selected.size() >= CnnApi.mNmsLimit) break;
 
-                for (int j=i+1; j<boxes.size(); j++) {
+                for (int j = i + 1; j < boxes.size(); j++) {
                     if (active[j]) {
                         Result boxB = boxes.get(j);
                         if (IOU(boxA.rect, boxB.rect) > CnnApi.mThreshold) {
