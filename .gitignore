@@ -100,7 +100,6 @@ app/src/main/assets/public
 # Android Profiling
 *.hprof
 
-offline-net/JPEGImages/
 model.pt
 model-mobile.pt
 
