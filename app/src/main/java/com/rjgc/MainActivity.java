@@ -2,8 +2,11 @@ package com.rjgc;
 
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.os.Build;
 import android.os.Bundle;
 import android.webkit.WebView;
+
+import androidx.annotation.RequiresApi;
 
 import com.fruitbasket.R;
 import com.getcapacitor.BridgeActivity;
@@ -15,8 +18,14 @@ import com.rjgc.api.LocalNetApi;
 import com.rjgc.sqlite.SqliteUtils;
 import com.rjgc.utils.ThreadPool;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 public class MainActivity extends BridgeActivity {
@@ -43,37 +52,58 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     public void onStart() {
         super.onStart();
         File offlineDatabase = new File(this.getCacheDir(), "offlineDatabase");
-        AlertDialog syncDialog = new AlertDialog.Builder(this)
+
+        if (!offlineDatabase.exists()) {
+            AlertDialog syncDialog = buildDialog("是否同步云端数据库，否则无法使用离线功能", offlineDatabase);
+            syncDialog.show();
+        } else {
+            try (BufferedReader reader = new BufferedReader(new FileReader(offlineDatabase))) {
+                String s = reader.readLine();
+                LocalDateTime time = LocalDateTime.parse(s);
+                long days = Duration.between(LocalDateTime.now(), time).toDays();
+                if (days > 5) {
+                    AlertDialog syncDialog = buildDialog("是否更新本地数据库并与云端同步", offlineDatabase);
+                    syncDialog.show();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                AlertDialog syncDialog = buildDialog("是否同步云端数据库，否则无法使用离线功能", offlineDatabase);
+                syncDialog.show();
+            }
+        }
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    private AlertDialog buildDialog(String msg, File offlineDatabase) {
+        return new AlertDialog.Builder(this)
                 .setTitle("提示")
-                .setMessage("是否同步云端数据库，否则无法使用离线功能")
+                .setMessage(msg)
                 .setPositiveButton("确定", (dialog, which) -> {
                     ProgressDialog progressDialog = new ProgressDialog(this);
                     progressDialog.setMessage("正在同步中");
                     progressDialog.show();
-                    ThreadPool.INSTANCE.execute(() -> {
-                        this.runOnUiThread(() -> {
-                            try {
-                                SqliteUtils.getInstance().syncFromRemote();
-                                offlineDatabase.createNewFile();
-                                Toast.show(this, "同步完成");
-                            } catch (Exception e) {
-                                Toast.show(this, "同步失败");
-                                e.printStackTrace();
-                            } finally {
-                                progressDialog.dismiss();
+                    ThreadPool.INSTANCE.execute(() -> this.runOnUiThread(() -> {
+                        try {
+                            SqliteUtils.getInstance().syncFromRemote();
+                            try (BufferedWriter writer = new BufferedWriter(new FileWriter(offlineDatabase))) {
+                                writer.write(String.valueOf(LocalDateTime.now()));
                             }
-                        });
-                    });
+                            Toast.show(this, "同步完成");
+                        } catch (Exception e) {
+                            Toast.show(this, "同步失败");
+                            e.printStackTrace();
+                        } finally {
+                            progressDialog.dismiss();
+                        }
+                    }));
                 })
                 .setNegativeButton("取消", ((dialog, which) -> Toast.show(this, "离线功能将无法使用")))
                 .create();
-        if (!offlineDatabase.exists()) {
-            syncDialog.show();
-        }
     }
 
     @Override
