@@ -1,5 +1,7 @@
 package com.rjgc;
 
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.webkit.WebView;
 
@@ -44,15 +46,33 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onStart() {
         super.onStart();
-        File firstSign = new File(this.getCacheDir(), "first");
-        if (!firstSign.exists()) {
-            try {
-                //noinspection ResultOfMethodCallIgnored
-                firstSign.createNewFile();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            Toast.show(this, "检测到第一次使用，正在同步数据库，否则将无法使用离线功能");
+        File offlineDatabase = new File(this.getCacheDir(), "offlineDatabase");
+        AlertDialog syncDialog = new AlertDialog.Builder(this)
+                .setTitle("提示")
+                .setMessage("是否同步云端数据库，否则无法使用离线功能")
+                .setPositiveButton("确定", (dialog, which) -> {
+                    ProgressDialog progressDialog = new ProgressDialog(this);
+                    progressDialog.setMessage("正在同步中");
+                    progressDialog.show();
+                    ThreadPool.INSTANCE.execute(() -> {
+                        this.runOnUiThread(() -> {
+                            try {
+                                SqliteUtils.getInstance().syncFromRemote();
+                                offlineDatabase.createNewFile();
+                                Toast.show(this, "同步完成");
+                            } catch (Exception e) {
+                                Toast.show(this, "同步失败");
+                                e.printStackTrace();
+                            } finally {
+                                progressDialog.dismiss();
+                            }
+                        });
+                    });
+                })
+                .setNegativeButton("取消", ((dialog, which) -> Toast.show(this, "离线功能将无法使用")))
+                .create();
+        if (!offlineDatabase.exists()) {
+            syncDialog.show();
         }
     }
 
@@ -69,7 +89,7 @@ public class MainActivity extends BridgeActivity {
                 mPressedTime = mNowTime;
             } else {//退出程序
                 this.finish();
-                SqliteUtils.getInstance(null, "").close();
+                SqliteUtils.getInstance().close();
                 ThreadPool.INSTANCE.shutdown();
                 System.exit(0);
             }
