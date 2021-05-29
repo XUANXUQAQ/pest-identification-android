@@ -73,7 +73,7 @@ public class CnnApi {
                 resultMap.put(code, 1);
             }
             if (each.rect.top != each.rect.bottom && each.rect.left != each.rect.right) {
-                drawRectangles(bitmap, each.rect);
+                bitmap = drawRectangles(bitmap, each.rect);
                 processedImg[0] = bitmap;
                 hasRect = true;
             }
@@ -84,10 +84,11 @@ public class CnnApi {
         if (resultMap.isEmpty()) {
             resultMap.put("error", 1);
         }
+        System.out.println(resultMap);
         return resultMap;
     }
 
-    private void drawRectangles(Bitmap imageBitmap, Rect valueRects) {
+    private Bitmap drawRectangles(Bitmap imageBitmap, Rect valueRects) {
         Bitmap mutableBitmap = imageBitmap.copy(Bitmap.Config.ARGB_8888, true);
         Canvas canvas = new Canvas(mutableBitmap);
         Paint paint = new Paint();
@@ -97,7 +98,7 @@ public class CnnApi {
             paint.setStrokeWidth(10);  //线的宽度
             canvas.drawRect(valueRects.left, valueRects.top, valueRects.right, valueRects.bottom, paint);
         }
-        canvas.drawBitmap(imageBitmap, 0, 0, null);
+        return mutableBitmap;
     }
 
     private static ArrayList<Result> outputsToNMSPredictions(float[] outputs, float imgScaleX, float imgScaleY, float ivScaleX, float ivScaleY) {
@@ -139,7 +140,6 @@ public class CnnApi {
 
     private static ArrayList<Result> nonMaxSuppression(ArrayList<Result> boxes) {
 
-        // Do an argsort on the confidence scores, from high to low.
         Collections.sort(boxes,
                 (o1, o2) -> o1.score.compareTo(o2.score));
 
@@ -148,11 +148,6 @@ public class CnnApi {
         Arrays.fill(active, true);
         int numActive = active.length;
 
-        // The algorithm is simple: Start with the box that has the highest score.
-        // Remove any remaining boxes that overlap it more than the given threshold
-        // amount. If there are any boxes left (i.e. these did not overlap with any
-        // previous boxes), then repeat this procedure, until no more boxes remain
-        // or the limit has been reached.
         boolean done = false;
         for (int i = 0; i < boxes.size() && !done; i++) {
             if (active[i]) {
