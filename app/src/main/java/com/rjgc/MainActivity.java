@@ -46,7 +46,7 @@ public class MainActivity extends BridgeActivity {
             CnnApi cnnApi = CnnApi.getInstance();
             cnnApi.init(getAssets(), "model.pt");
             new LocalNetApi(8888, this.getCacheDir()).start();
-            new LocalDatabaseApi(8889, this, "http://rjgc.club:8099/species/all").start();
+            new LocalDatabaseApi(8889, this, "http://120.79.146.15:8081/species/all").start();
         } catch (IOException e) {
             e.printStackTrace();
         }
