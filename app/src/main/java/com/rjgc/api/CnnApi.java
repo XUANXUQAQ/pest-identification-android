@@ -19,10 +19,15 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * yolov5神经网络api本地实现
+ */
 public class CnnApi {
     private Module module;
+    //识别阈值
     private static final float mThreshold = 0.30f; // score above which a detection is generated
     private static final int mNmsLimit = 15;
+    //输入图片大小
     private static final float imageSize = 640;
 
 
@@ -42,10 +47,21 @@ public class CnnApi {
         return instance;
     }
 
+    /**
+     * 加载网络模型
+     * @param assetManager assets读取工具
+     * @param moduleName Torchscript文件名
+     */
     public void init(AssetManager assetManager, String moduleName) {
         module = PyTorchAndroid.loadModuleFromAsset(assetManager, moduleName);
     }
 
+    /**
+     * 输入图片，输出预测信息
+     * @param bitmap 输入图片
+     * @param processedImg 处理后的图片,Object[1] 需要放到数组中，否则局部变量无法获取
+     * @return 预测信息
+     */
     public Map<String, Integer> predict(Bitmap bitmap, Object[] processedImg) {
         HashMap<String, Integer> resultMap = new HashMap<>();
         // preparing input tensor
@@ -88,6 +104,12 @@ public class CnnApi {
         return resultMap;
     }
 
+    /**
+     * 在bitmap上画框
+     * @param imageBitmap 输入图片
+     * @param valueRects 框的位置
+     * @return 画了框的图片
+     */
     private Bitmap drawRectangles(Bitmap imageBitmap, Rect valueRects) {
         Bitmap mutableBitmap = imageBitmap.copy(Bitmap.Config.ARGB_8888, true);
         Canvas canvas = new Canvas(mutableBitmap);
@@ -101,6 +123,15 @@ public class CnnApi {
         return mutableBitmap;
     }
 
+    /**
+     * 对原始输出进行处理
+     * @param outputs 输出
+     * @param imgScaleX 相对图片大小X
+     * @param imgScaleY 相对图片大小Y
+     * @param ivScaleX 显示最小图片大小X
+     * @param ivScaleY 显示最小图片大小Y
+     * @return Result list
+     */
     private static ArrayList<Result> outputsToNMSPredictions(float[] outputs, float imgScaleX, float imgScaleY, float ivScaleX, float ivScaleY) {
         ArrayList<Result> results = new ArrayList<>();
         int mOutputRow = 25200;
@@ -138,6 +169,11 @@ public class CnnApi {
         return nonMaxSuppression(results);
     }
 
+    /**
+     * 非极大抑制
+     * @param boxes 结果
+     * @return 筛选后的结果
+     */
     private static ArrayList<Result> nonMaxSuppression(ArrayList<Result> boxes) {
 
         Collections.sort(boxes,

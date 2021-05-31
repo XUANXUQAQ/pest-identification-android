@@ -62,8 +62,7 @@ public class ResBody<T> {
 
     @Override
     public String toString() {
-        String s = JSON.toJSONString(this);
-        return s;
+        return JSON.toJSONString(this);
     }
 
     private void setResult(Object result) {

@@ -13,6 +13,9 @@ import java.util.LinkedList;
 
 import fi.iki.elonen.NanoHTTPD;
 
+/**
+ * 数据库api本地模拟
+ */
 public class LocalDatabaseApi extends NanoHTTPD {
 
     private final SqliteUtils sqliteUtils;

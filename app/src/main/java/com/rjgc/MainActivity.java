@@ -57,7 +57,6 @@ public class MainActivity extends BridgeActivity {
     public void onStart() {
         super.onStart();
         File offlineDatabase = new File(this.getCacheDir(), "offlineDatabase");
-
         if (!offlineDatabase.exists()) {
             AlertDialog syncDialog = buildDialog("是否同步云端数据库，否则无法使用离线功能", offlineDatabase);
             syncDialog.show();
@@ -87,20 +86,20 @@ public class MainActivity extends BridgeActivity {
                     ProgressDialog progressDialog = new ProgressDialog(this);
                     progressDialog.setMessage("正在同步中");
                     progressDialog.show();
-                    ThreadPool.INSTANCE.execute(() -> this.runOnUiThread(() -> {
+                    ThreadPool.INSTANCE.execute(() -> {
                         try {
                             SqliteUtils.getInstance().syncFromRemote();
                             try (BufferedWriter writer = new BufferedWriter(new FileWriter(offlineDatabase))) {
                                 writer.write(String.valueOf(LocalDateTime.now()));
                             }
-                            Toast.show(this, "同步完成");
+                            this.runOnUiThread(() -> Toast.show(this, "同步完成"));
                         } catch (Exception e) {
-                            Toast.show(this, "同步失败");
+                            this.runOnUiThread(() -> Toast.show(this, "同步失败"));
                             e.printStackTrace();
                         } finally {
                             progressDialog.dismiss();
                         }
-                    }));
+                    });
                 })
                 .setNegativeButton("取消", ((dialog, which) -> Toast.show(this, "离线功能将无法使用")))
                 .create();

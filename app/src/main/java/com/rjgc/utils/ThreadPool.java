@@ -14,6 +14,10 @@ public enum ThreadPool {
             TimeUnit.SECONDS,
             new SynchronousQueue<>());
 
+    /**
+     * 线程池中执行线程
+     * @param run run
+     */
     public void execute(Runnable run) {
         threadPool.execute(run);
     }

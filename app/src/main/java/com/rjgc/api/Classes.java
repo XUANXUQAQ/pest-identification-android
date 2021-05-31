@@ -2,6 +2,9 @@ package com.rjgc.api;
 
 public class Classes {
 
+    /**
+     * 所有的害虫类别
+     */
     public static final String[] classes = {
             "C15204005005", "C15104005005", "C15331005010", "C15206040005", "C22301125010",
             "C22301070005",

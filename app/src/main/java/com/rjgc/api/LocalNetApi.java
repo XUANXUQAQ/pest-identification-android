@@ -17,6 +17,9 @@ import java.util.Map;
 
 import fi.iki.elonen.NanoHTTPD;
 
+/**
+ * 神经网络api本地模拟
+ */
 public class LocalNetApi extends NanoHTTPD {
 
     private final File cachedDir;

@@ -56,6 +56,11 @@ public class SqliteUtils {
         return cursor.getColumnIndex(columnName);
     }
 
+    /**
+     * 根据code查询害虫信息，模拟远程api
+     * @param code 害虫code
+     * @return 害虫信息
+     */
     public Species selectSpeciesByCode(String code) {
         String select = String.format("SELECT * FROM species where code=\"%s\" order by id", code);
         Species species = new Species();
@@ -86,6 +91,9 @@ public class SqliteUtils {
         return false;
     }
 
+    /**
+     * 从远程数据库同步，保存到本地数据库
+     */
     public void syncFromRemote() {
         OkHttpClient okHttpClient = new OkHttpClient();
         AtomicInteger pageNum = new AtomicInteger(1);

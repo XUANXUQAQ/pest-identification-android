@@ -44,6 +44,7 @@ public enum NetUtils {
         return res;
     }
 
+    @SuppressWarnings("unchecked")
     private void init() {
         ThreadPool.INSTANCE.execute(() -> {
             CnnApi cnnApi = CnnApi.getInstance();
