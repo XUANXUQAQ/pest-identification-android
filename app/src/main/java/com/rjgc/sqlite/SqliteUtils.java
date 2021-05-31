@@ -106,8 +106,8 @@ public class SqliteUtils {
         String url = this.remoteApiUrl + "?pageNum=" + pageNum.get() + "&pageSize=" + pageSize;
         Request build = new Request.Builder().url(url).build();
         Call call = okHttpClient.newCall(build);
-        enqueue(call, pages, isPagesUpdateFromRemote, finishedNum);
         totalNum.incrementAndGet();
+        enqueue(call, pages, isPagesUpdateFromRemote, finishedNum);
         pageNum.incrementAndGet();
 
         //等待网络连接
