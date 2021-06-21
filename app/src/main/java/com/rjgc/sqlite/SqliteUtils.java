@@ -128,15 +128,15 @@ public class SqliteUtils {
                 url = this.remoteApiUrl + "?pageNum=" + pageNum.get() + "&pageSize=" + pageSize;
                 build = new Request.Builder().url(url).build();
                 call = okHttpClient.newCall(build);
+                totalNum.incrementAndGet();
                 enqueue(call, pages, isPagesUpdateFromRemote, finishedNum);
                 pageNum.incrementAndGet();
-                totalNum.incrementAndGet();
             }
         }
 
         try {
             start = System.currentTimeMillis();
-            while (finishedNum.get() != totalNum.get()) {
+            while (finishedNum.get() != totalNum.get() || finishedNum.get() == 0) {
                 if (System.currentTimeMillis() - start > 60000) {
                     System.err.println("sync timeout");
                     break;
