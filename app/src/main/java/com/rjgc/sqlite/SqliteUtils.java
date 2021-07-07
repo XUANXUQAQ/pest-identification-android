@@ -153,6 +153,7 @@ public class SqliteUtils {
         call.enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
+                e.printStackTrace();
                 finishedNum.incrementAndGet();
             }
 
@@ -166,7 +167,6 @@ public class SqliteUtils {
                 Map<String, Object> map = JSON.parseObject(respStr, Map.class);
                 Map<String, Object> result = (Map<String, Object>) map.get("result");
                 try {
-                    db.execSQL("BEGIN;");
                     Object data1 = result.get("data");
                     List<Object> data;
                     if (data1 instanceof String) {
@@ -210,7 +210,7 @@ public class SqliteUtils {
                 } catch (Exception e) {
                     e.printStackTrace();
                 } finally {
-                    db.execSQL("COMMIT;");
+                    System.out.println("第" + finishedNum.get() + "已完成");
                     finishedNum.incrementAndGet();
                 }
             }
