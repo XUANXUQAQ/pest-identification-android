@@ -31,19 +31,19 @@ public class LocalDatabaseApi extends NanoHTTPD {
     public Response serve(IHTTPSession session) {
         Method method = session.getMethod();
         String uri = session.getUri();
-        if (Method.GET.equals(method)) {
-            if (uri.contains("species")) {
-                String[] split = uri.split("/");
-                String code = split[split.length - 1];
-                Species species = sqliteUtils.selectSpeciesByCode(code);
-                HashMap<String, Object> map = new HashMap<>();
-                LinkedList<Species> list = new LinkedList<>();
-                list.add(species);
-                map.put("pages", 1);
-                map.put("data", list);
-                Toast.show(context, "当前无网络，识别功能受限");
-                return RespUtils.responseCORS(ResBody.success(map).toString(), session);
-            }
+        if (Method.GET.equals(method) && uri.contains("species")) {
+            String[] split = uri.split("/");
+            String code = split[split.length - 1];
+            Species species = sqliteUtils.selectSpeciesByCode(code);
+            HashMap<String, Object> map = new HashMap<>();
+            LinkedList<Species> list = new LinkedList<>();
+            list.add(species);
+            map.put("pages", 1);
+            map.put("data", list);
+            Toast.show(context, "当前无网络，识别功能受限");
+            return RespUtils.responseCORS(ResBody.success(map).toString(), session);
+        } else if (Method.POST.equals(method) && uri.contains("imgFake")) {
+            return RespUtils.responseCORS(ResBody.success().toString(), session);
         }
         return RespUtils.responseCORS(ResBody.error(40000, "无效的请求").toString(), session);
     }
